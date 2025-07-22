@@ -22,7 +22,7 @@ function App() {
     })
     setTimeout(() => {
       setAlert(null)
-    },3000);
+    },5000);
   }
 
   const toggleMode =()=>{
@@ -54,7 +54,7 @@ function App() {
       <Alert alert={alertMode}/>
       <div className='container'>
       <Routes>
-          <Route exact path="/" element={<Textform heading="Enter Text To Analyze" mode={mode} />}>
+          <Route exact path="/" element={<Textform heading="Enter Text To Analyze" mode={mode} alert={showAlert} />}>
           </Route>
           <Route exact path="/about" element={ <About mode={mode} />}>
           </Route>
