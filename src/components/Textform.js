@@ -213,10 +213,11 @@ export default function Textform(props) {
         </div>
 
         <select
-          className="form-select my-2"
+          className="form-select my-2 "
           style={{
             color: props.mode === "Light" ? "black" : "white",
             backgroundColor: props.mode === "light" ? "black" : "red",
+            width: "15rem"
           }}
           aria-label="Language select"
           value={targetLang}
