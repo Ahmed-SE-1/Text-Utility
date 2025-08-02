@@ -24,27 +24,14 @@ export default function Textform(props) {
   const [text, setText] = useState("");
   const [targetLang, setTargetLang] = useState("");
 
-  const handleUpper = () => {
-    setText(text.toUpperCase());
-  };
-
-  const handleLower = () => {
-    setText(text.toLowerCase());
-  };
-
-  const handleClear = () => {
-    setText("");
-  };
-
+  const handleUpper = () => setText(text.toUpperCase());
+  const handleLower = () => setText(text.toLowerCase());
+  const handleClear = () => setText("");
   const handleCopy = () => {
     navigator.clipboard.writeText(text);
     props.alert("Text copied to clipboard!", "success");
   };
-
-  const handleSpaces = () => {
-    setText(text.split(/[ ]+/).join(" "));
-  };
-
+  const handleSpaces = () => setText(text.split(/[ ]+/).join(" "));
   const removeduplicate = () => {
     const words = text.split(/\s+/);
     const unique = [...new Set(words)];
@@ -128,14 +115,33 @@ export default function Textform(props) {
     }
 
     try {
-      const langPair = `en|${targetLang}`; // Assuming source is English
-      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
-        inputText
-      )}&langpair=${langPair}`;
+      // Detect source language
+      const detectRes = await fetch("https://ws.detectlanguage.com/0.2/detect", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer f9b89a878ceda1cde75672cd07a43319",
+        },
+        body: JSON.stringify({ q: inputText }),
+      });
 
-      const response = await fetch(url);
+      const detectData = await detectRes.json();
+      const detectedLang = detectData?.data?.detections?.[0]?.language;
+
+      if (!detectedLang) {
+        props.alert("Failed to detect source language", "danger");
+        return;
+      }
+
+      const langPair = `${detectedLang}|${targetLang}`;
+
+      const response = await fetch(
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
+          inputText
+        )}&langpair=${langPair}`
+      );
+
       const data = await response.json();
-
       const translated = data?.responseData?.translatedText;
 
       if (!translated) {
@@ -143,7 +149,12 @@ export default function Textform(props) {
         return;
       }
 
-      props.alert("Translation successful", "success");
+      props.alert(
+        `Translated from ${languageNames[detectedLang] || detectedLang} to ${
+          languageNames[targetLang]
+        }`,
+        "success"
+      );
       setText(translated);
     } catch (error) {
       console.error("Translation error:", error);
@@ -151,10 +162,7 @@ export default function Textform(props) {
     }
   };
 
-  const handleChange = (event) => {
-    setText(event.target.value);
-  };
-
+  const handleChange = (event) => setText(event.target.value);
   const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
 
   return (
@@ -177,53 +185,31 @@ export default function Textform(props) {
         ></textarea>
 
         <div className="d-flex flex-wrap gap-2 my-3">
-          <button className="btn btn-primary" onClick={handleUpper}>
-            UpperCase
-          </button>
-          <button className="btn btn-primary" onClick={handleLower}>
-            LowerCase
-          </button>
-          <button className="btn btn-danger" onClick={handleClear}>
-            Clear
-          </button>
-          <button className="btn btn-primary" onClick={handleCopy}>
-            Copy
-          </button>
-          <button className="btn btn-danger" onClick={handleSpaces}>
-            Remove Spaces
-          </button>
-          <button className="btn btn-success" onClick={removeduplicate}>
-            Remove Duplicates
-          </button>
-          <button className="btn btn-info" onClick={() => detectLanguage(text)}>
-            Detect Language
-          </button>
-          <button className="btn btn-info" onClick={() => caesarEncrypt(text)}>
-            Encrypt
-          </button>
-          <button className="btn btn-info" onClick={() => caesarDecrypt(text)}>
-            Decrypt
-          </button>
-          <button className="btn btn-info" onClick={() => extractNumbers(text)}>
-            Extract Numbers
-          </button>
-          <button className="btn btn-info" onClick={() => extractEmails(text)}>
-            Extract Emails
-          </button>
+          <button className="btn btn-primary" onClick={handleUpper}>UpperCase</button>
+          <button className="btn btn-primary" onClick={handleLower}>LowerCase</button>
+          <button className="btn btn-danger" onClick={handleClear}>Clear</button>
+          <button className="btn btn-primary" onClick={handleCopy}>Copy</button>
+          <button className="btn btn-danger" onClick={handleSpaces}>Remove Spaces</button>
+          <button className="btn btn-success" onClick={removeduplicate}>Remove Duplicates</button>
+          <button className="btn btn-info" onClick={() => detectLanguage(text)}>Detect Language</button>
+          <button className="btn btn-info" onClick={() => caesarEncrypt(text)}>Encrypt</button>
+          <button className="btn btn-info" onClick={() => caesarDecrypt(text)}>Decrypt</button>
+          <button className="btn btn-info" onClick={() => extractNumbers(text)}>Extract Numbers</button>
+          <button className="btn btn-info" onClick={() => extractEmails(text)}>Extract Emails</button>
         </div>
 
         <select
-          className="form-select my-2 "
+          className="form-select my-2"
           style={{
-            color: props.mode === "Light" ? "black" : "white",
-            backgroundColor: props.mode === "light" ? "black" : "red",
-            width: "15rem"
+            color: props.mode === "light" ? "black" : "white",
+            backgroundColor: props.mode === "light" ? "white" : "black",
+            width: "15rem",
           }}
           aria-label="Language select"
           value={targetLang}
           onChange={(e) => setTargetLang(e.target.value)}
         >
-          <option >Select Language</option>
+          <option value="">Select Language</option>
           {Object.entries(languageNames).map(([code, name]) => (
             <option key={code} value={code}>
               {name}
@@ -231,16 +217,18 @@ export default function Textform(props) {
           ))}
         </select>
 
-        <button className="btn btn-info my-2" onClick={() => translator(text)}>
+        <button
+          className="btn btn-info my-2"
+          onClick={() => translator(text)}
+          disabled={!targetLang || !text.trim()}
+        >
           Translate Text
         </button>
       </div>
 
       <div className="container">
         <h2>Text Summary</h2>
-        <p>
-          {wordCount} words | {text.length} characters
-        </p>
+        <p>{wordCount} words | {text.length} characters</p>
         <p>{(wordCount * 0.008).toFixed(2)} minutes to read</p>
         <h2>Preview</h2>
         <p>{text.length > 0 ? text : "Nothing to preview."}</p>
